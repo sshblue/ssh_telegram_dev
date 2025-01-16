@@ -16,5 +16,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Run the bot
-CMD ["python", "main.py"]
+# Add environment verification and logging
+RUN echo "Python version:" && python --version
+RUN echo "Pip version:" && pip --version
+RUN echo "Installed packages:" && pip list
+
+# Add a healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('https://api.telegram.org/bot${TELEGRAM_TOKEN}/getMe')" || exit 1
+
+# Run the bot with logging
+CMD ["sh", "-c", "echo 'Starting bot...' && python -u main.py"]

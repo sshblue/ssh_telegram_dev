@@ -4,3 +4,4 @@ supabase==2.2.0
 httpx==0.24.1
 anyio==3.7.1
 httpcore==0.17.3
+requests==2.31.0
