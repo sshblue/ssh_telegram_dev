@@ -11,7 +11,7 @@ load_dotenv()
 # Get bot token from environment variable
 TOKEN = os.getenv('TELEGRAM_TOKEN')
 
-def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
     if not context.user_data.get('language'):
         # Create language selection keyboard
@@ -23,7 +23,7 @@ def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        context.bot.send_message(
+        await context.bot.send_message(
             chat_id=update.effective_chat.id,
             text=" Выберите язык / Choose your language / Choisissez votre langue:",
             reply_markup=reply_markup
@@ -43,17 +43,17 @@ def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    context.bot.send_message(
+    await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=messages['welcome'],
         reply_markup=reply_markup,
         parse_mode='HTML'
     )
 
-def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle button presses."""
     query = update.callback_query
-    query.answer()
+    await query.answer()
     
     if query.data.startswith('lang_'):
         # Handle language selection
@@ -61,7 +61,7 @@ def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['language'] = language
         
         # Show main menu after language selection
-        start(update, context)
+        await start(update, context)
         return
     
     if query.data == 'change_lang':
@@ -74,7 +74,7 @@ def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        query.edit_message_text(
+        await query.edit_message_text(
             text=" Выберите язык / Choose your language / Choisissez votre langue:",
             reply_markup=reply_markup
         )
@@ -85,35 +85,35 @@ def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if query.data == 'project':
         context.user_data['action'] = 'project'
-        query.edit_message_text(
+        await query.edit_message_text(
             text=messages['project_prompt'],
             parse_mode='HTML'
         )
     elif query.data == 'support':
         context.user_data['action'] = 'support'
-        query.edit_message_text(
+        await query.edit_message_text(
             text=messages['support_prompt'],
             parse_mode='HTML'
         )
     elif query.data == 'about':
         keyboard = [[InlineKeyboardButton(messages['menu']['project'], callback_data='project')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        query.edit_message_text(
+        await query.edit_message_text(
             text=messages['about'],
             reply_markup=reply_markup,
             parse_mode='HTML'
         )
     elif query.data == 'contact':
-        query.edit_message_text(
+        await query.edit_message_text(
             text=messages['contact'],
             parse_mode='HTML'
         )
 
-def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle user messages."""
     if not context.user_data.get('language'):
         # If no language is set, trigger start command
-        start(update, context)
+        await start(update, context)
         return
     
     messages = MESSAGES[context.user_data['language']]
@@ -127,16 +127,14 @@ def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message=update.message.text,
                 language=context.user_data['language']
             )
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=messages['message_received'],
+            await update.message.reply_text(
+                messages['message_received'],
                 parse_mode='HTML'
             )
         except Exception as e:
             print(f"Error saving project request: {e}")
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="An error occurred while saving your request. Please try again later.",
+            await update.message.reply_text(
+                "An error occurred while saving your request. Please try again later.",
                 parse_mode='HTML'
             )
     
@@ -148,16 +146,14 @@ def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message=update.message.text,
                 language=context.user_data['language']
             )
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=messages['message_received'],
+            await update.message.reply_text(
+                messages['message_received'],
                 parse_mode='HTML'
             )
         except Exception as e:
             print(f"Error saving support request: {e}")
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="An error occurred while saving your request. Please try again later.",
+            await update.message.reply_text(
+                "An error occurred while saving your request. Please try again later.",
                 parse_mode='HTML'
             )
     
