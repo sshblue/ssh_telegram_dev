@@ -1,4 +1,4 @@
-from supabase import create_client
+from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -10,10 +10,24 @@ load_dotenv()
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# Initialiser le client Supabase
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# Initialize Supabase client with custom options
+options = {
+    'auth': {
+        'autoRefreshToken': True,
+        'persistSession': False
+    },
+    'db': {
+        'schema': 'public'
+    }
+}
 
-async def save_project_request(user_id: int, username: str, message: str, language: str):
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY, options)
+except Exception as e:
+    print(f"Error initializing Supabase client: {e}")
+    raise
+
+async def save_project_request(user_id: str, username: str, message: str, language: str):
     """Enregistre une nouvelle demande de projet"""
     try:
         data = {
@@ -26,12 +40,13 @@ async def save_project_request(user_id: int, username: str, message: str, langua
         }
         
         result = supabase.table('project_requests').insert(data).execute()
+        print(f"Project request saved: {result}")
         return result.data[0] if result.data else None
     except Exception as e:
         print(f"Erreur lors de l'enregistrement du projet: {e}")
-        return None
+        raise
 
-async def save_support_request(user_id: int, username: str, message: str, language: str):
+async def save_support_request(user_id: str, username: str, message: str, language: str):
     """Enregistre une nouvelle demande de support"""
     try:
         data = {
@@ -44,7 +59,8 @@ async def save_support_request(user_id: int, username: str, message: str, langua
         }
         
         result = supabase.table('support_requests').insert(data).execute()
+        print(f"Support request saved: {result}")
         return result.data[0] if result.data else None
     except Exception as e:
         print(f"Erreur lors de l'enregistrement de la demande de support: {e}")
-        return None
+        raise
