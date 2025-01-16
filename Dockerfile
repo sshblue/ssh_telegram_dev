@@ -1,29 +1,30 @@
-# Use Python 3.11 slim image
+# Use Python 3.11 slim image for minimal size
 FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies and clean up
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    && rm -rf /var/lib/apt/lists/*
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Copy requirements first to leverage Docker cache
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application
+# Copy project files
 COPY . .
 
-# Add environment verification and logging
-RUN echo "Python version:" && python --version
-RUN echo "Pip version:" && pip --version
-RUN echo "Installed packages:" && pip list
+# Create volume directory for logs
+RUN mkdir -p /app/logs && chmod 777 /app/logs
 
-# Add a healthcheck
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('https://api.telegram.org/bot${TELEGRAM_TOKEN}/getMe')" || exit 1
-
-# Run the bot with logging
-CMD ["sh", "-c", "echo 'Starting bot...' && python -u main.py"]
+# Run the bot
+CMD ["python", "main.py"]

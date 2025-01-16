@@ -1,34 +1,29 @@
 version: '3.8'
 
 services:
-  bot:
-    build: .
+  telegram_bot:
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: telegram_bot
     restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
     env_file:
       - .env
     volumes:
+      - .:/app
       - ./logs:/app/logs
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    environment:
-      - PYTHONUNBUFFERED=1
-    networks:
-      - bot_network
-    deploy:
-      resources:
-        limits:
-          memory: 500M
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('https://api.telegram.org/bot$${TELEGRAM_TOKEN}/getMe')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
-
-networks:
-  bot_network:
-    driver: bridge
+    command: >
+      sh -c "
+        echo 'Checking environment variables...' &&
+        echo 'TELEGRAM_TOKEN exists:' &&
+        [ ! -z \"$$TELEGRAM_TOKEN\" ] &&
+        echo 'Starting bot...' &&
+        python main.py
+      "

@@ -1,8 +1,7 @@
+from supabase import create_client
 import os
-from datetime import datetime
 from dotenv import load_dotenv
-from supabase import create_client, Client
-from postgrest.exceptions import APIError
+from datetime import datetime
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -11,24 +10,16 @@ load_dotenv()
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
+# Initialiser le client Supabase
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-print(f"Attempting to connect to Supabase at URL: {SUPABASE_URL}")
-
-# Initialize Supabase client
-try:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    print("Successfully connected to Supabase")
-except Exception as e:
-    print(f"Error initializing Supabase client: {e}")
-    raise
-
-def save_project_request(user_id: str, username: str, message: str, language: str) -> dict:
-    """Enregistre une nouvelle demande de projet"""
+def save_project_request(user_id: str, username: str, message: str, language: str) -> None:
+    """
+    Save a project request to Supabase
+    """
     try:
         data = {
-            'user_id': str(user_id),
+            'user_id': user_id,
             'username': username,
             'message': message,
             'language': language,
@@ -37,20 +28,18 @@ def save_project_request(user_id: str, username: str, message: str, language: st
         }
         
         result = supabase.table('project_requests').insert(data).execute()
-        print(f"Project request saved: {result}")
-        return result.data[0] if result.data else None
-    except APIError as e:
-        print(f"Supabase API error while saving project request: {e}")
-        raise
+        return result.data
     except Exception as e:
-        print(f"Unexpected error while saving project request: {e}")
-        raise
+        print(f"Error saving project request: {e}")
+        return None
 
-def save_support_request(user_id: str, username: str, message: str, language: str) -> dict:
-    """Enregistre une nouvelle demande de support"""
+def save_support_request(user_id: str, username: str, message: str, language: str) -> None:
+    """
+    Save a support request to Supabase
+    """
     try:
         data = {
-            'user_id': str(user_id),
+            'user_id': user_id,
             'username': username,
             'message': message,
             'language': language,
@@ -59,11 +48,7 @@ def save_support_request(user_id: str, username: str, message: str, language: st
         }
         
         result = supabase.table('support_requests').insert(data).execute()
-        print(f"Support request saved: {result}")
-        return result.data[0] if result.data else None
-    except APIError as e:
-        print(f"Supabase API error while saving support request: {e}")
-        raise
+        return result.data
     except Exception as e:
-        print(f"Unexpected error while saving support request: {e}")
-        raise
+        print(f"Error saving support request: {e}")
+        return None

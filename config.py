@@ -57,11 +57,11 @@ Telegram : {TELEGRAM_USERNAME}
 
 <i>En attendant, n'hésitez pas à explorer les autres options du menu principal avec /start</i>""",
     'menu': {
-        'project': "Proposer un projet",
-        'support': "Support technique",
-        'about': "À propos",
-        'contact': "Contact",
-        'change_lang': "Changer de langue"
+        'project': "🚀 Proposer un projet",
+        'support': "💡 Support technique",
+        'about': "ℹ️ À propos",
+        'contact': "📫 Contact",
+        'change_lang': "🌐 Changer de langue"
     }
 }
 
@@ -110,11 +110,11 @@ Telegram: {TELEGRAM_USERNAME}
 
 <i>In the meantime, feel free to explore other options in the main menu with /start</i>""",
     'menu': {
-        'project': "Propose a project",
-        'support': "Technical support",
-        'about': "About",
-        'contact': "Contact",
-        'change_lang': "Change language"
+        'project': "🚀 Propose a project",
+        'support': "💡 Technical support",
+        'about': "ℹ️ About",
+        'contact': "📫 Contact",
+        'change_lang': "🌐 Change language"
     }
 }
 
@@ -163,11 +163,11 @@ Telegram: {TELEGRAM_USERNAME}
 
 <i>Пока что вы можете изучить другие опции в главном меню с помощью /start</i>""",
     'menu': {
-        'project': "Предложить проект",
-        'support': "Техподдержка",
-        'about': "О нас",
-        'contact': "Контакт",
-        'change_lang': "Сменить язык"
+        'project': "🚀 Предложить проект",
+        'support': "💡 Техподдержка",
+        'about': "ℹ️ О нас",
+        'contact': "📫 Контакт",
+        'change_lang': "🌐 Сменить язык"
     }
 }
 
