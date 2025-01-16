@@ -1,7 +1,7 @@
-from supabase import create_client, Client
 import os
-from dotenv import load_dotenv
 from datetime import datetime
+from dotenv import load_dotenv
+from supabase import create_client, Client
 
 # Charger les variables d'environnement
 load_dotenv()
@@ -10,24 +10,15 @@ load_dotenv()
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# Initialize Supabase client with custom options
-options = {
-    'auth': {
-        'autoRefreshToken': True,
-        'persistSession': False
-    },
-    'db': {
-        'schema': 'public'
-    }
-}
-
+# Initialize Supabase client
 try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY, options)
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Successfully connected to Supabase")
 except Exception as e:
     print(f"Error initializing Supabase client: {e}")
     raise
 
-async def save_project_request(user_id: str, username: str, message: str, language: str):
+def save_project_request(user_id: str, username: str, message: str, language: str) -> dict:
     """Enregistre une nouvelle demande de projet"""
     try:
         data = {
@@ -46,7 +37,7 @@ async def save_project_request(user_id: str, username: str, message: str, langua
         print(f"Erreur lors de l'enregistrement du projet: {e}")
         raise
 
-async def save_support_request(user_id: str, username: str, message: str, language: str):
+def save_support_request(user_id: str, username: str, message: str, language: str) -> dict:
     """Enregistre une nouvelle demande de support"""
     try:
         data = {

@@ -1,127 +1,182 @@
-import logging
+import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters, ConversationHandler
-from config import TELEGRAM_TOKEN, LANGUAGE_SELECT_MESSAGE, MESSAGES
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
+from dotenv import load_dotenv
 from database import save_project_request, save_support_request
+from config import FR_MESSAGES, EN_MESSAGES, RU_MESSAGES, MESSAGES
 
-# Configuration du logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+# Load environment variables
+load_dotenv()
 
-# États de conversation
-WAITING_FOR_PROJECT = 1
-WAITING_FOR_SUPPORT = 2
+# Get bot token from environment variable
+TOKEN = os.getenv('TELEGRAM_TOKEN')
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Gestionnaire de la commande /start"""
-    keyboard = [
-        [
-            InlineKeyboardButton("🇫🇷 Français", callback_data='lang_fr'),
-            InlineKeyboardButton("🇬🇧 English", callback_data='lang_en'),
-            InlineKeyboardButton("🇷🇺 Русский", callback_data='lang_ru')
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(LANGUAGE_SELECT_MESSAGE, reply_markup=reply_markup, parse_mode='HTML')
-
-async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, language='fr'):
-    """Affiche le menu principal dans la langue sélectionnée"""
-    messages = MESSAGES[language]
-    keyboard = [
-        [
-            InlineKeyboardButton(f"🚀 {messages['menu']['project']}", callback_data=f'{language}_project'),
-            InlineKeyboardButton(f"💡 {messages['menu']['support']}", callback_data=f'{language}_support')
-        ],
-        [
-            InlineKeyboardButton(f"ℹ️ {messages['menu']['about']}", callback_data=f'{language}_about'),
-            InlineKeyboardButton(f"📫 {messages['menu']['contact']}", callback_data=f'{language}_contact')
-        ],
-        [
-            InlineKeyboardButton(f"🌐 {messages['menu']['change_lang']}", callback_data='change_lang')
-        ]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    if update.callback_query:
-        await update.callback_query.message.edit_text(messages['welcome'], reply_markup=reply_markup, parse_mode='HTML')
-    else:
-        await update.message.reply_text(messages['welcome'], reply_markup=reply_markup, parse_mode='HTML')
-
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Gestionnaire des callbacks des boutons"""
-    query = update.callback_query
-    await query.answer()
-
-    if query.data.startswith('lang_'):
-        language = query.data.split('_')[1]
-        await show_main_menu(update, context, language)
-        context.user_data['language'] = language
-    elif query.data == 'change_lang':
+def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a message when the command /start is issued."""
+    if not context.user_data.get('language'):
+        # Create language selection keyboard
         keyboard = [
             [
-                InlineKeyboardButton("🇫🇷 Français", callback_data='lang_fr'),
-                InlineKeyboardButton("🇬🇧 English", callback_data='lang_en'),
-                InlineKeyboardButton("🇷🇺 Русский", callback_data='lang_ru')
+                InlineKeyboardButton("Français ", callback_data='lang_fr'),
+                InlineKeyboardButton("English ", callback_data='lang_en'),
+                InlineKeyboardButton("", callback_data='lang_ru')
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await query.message.edit_text(LANGUAGE_SELECT_MESSAGE, reply_markup=reply_markup, parse_mode='HTML')
-    else:
-        language, action = query.data.split('_')
-        messages = MESSAGES[language]
-        if action == 'about':
-            await query.message.reply_text(messages['about'], parse_mode='HTML')
-        elif action == 'project':
-            await query.message.reply_text(messages['project_prompt'], parse_mode='HTML')
-            context.user_data['waiting_for'] = 'project'
-        elif action == 'support':
-            await query.message.reply_text(messages['support_prompt'], parse_mode='HTML')
-            context.user_data['waiting_for'] = 'support'
-        elif action == 'contact':
-            await query.message.reply_text(messages['contact'], parse_mode='HTML')
+        context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=" Выберите язык / Choose your language / Choisissez votre langue:",
+            reply_markup=reply_markup
+        )
+        return
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Gestionnaire des messages texte"""
-    user_message = update.message.text
-    user_name = update.message.from_user.username or update.message.from_user.first_name
-    user_id = update.message.from_user.id
-    language = context.user_data.get('language', 'fr')
+    # Get messages for user's language
+    messages = MESSAGES[context.user_data['language']]
     
-    # Vérifier l'état de la conversation
-    if context.user_data.get('waiting_for') == 'project':
-        # Sauvegarder la demande de projet
-        await save_project_request(user_id, user_name, user_message, language)
-        await update.message.reply_text(MESSAGES[language]['message_received'], parse_mode='HTML')
-        context.user_data.pop('waiting_for', None)
-        return ConversationHandler.END
+    # Create main menu keyboard
+    keyboard = [
+        [InlineKeyboardButton(messages['menu']['project'], callback_data='project')],
+        [InlineKeyboardButton(messages['menu']['support'], callback_data='support')],
+        [InlineKeyboardButton(messages['menu']['about'], callback_data='about')],
+        [InlineKeyboardButton(messages['menu']['contact'], callback_data='contact')],
+        [InlineKeyboardButton(messages['menu']['change_lang'], callback_data='change_lang')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=messages['welcome'],
+        reply_markup=reply_markup,
+        parse_mode='HTML'
+    )
+
+def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle button presses."""
+    query = update.callback_query
+    query.answer()
+    
+    if query.data.startswith('lang_'):
+        # Handle language selection
+        language = query.data.split('_')[1]
+        context.user_data['language'] = language
         
-    elif context.user_data.get('waiting_for') == 'support':
-        # Sauvegarder la demande de support
-        await save_support_request(user_id, user_name, user_message, language)
-        await update.message.reply_text(MESSAGES[language]['message_received'], parse_mode='HTML')
-        context.user_data.pop('waiting_for', None)
-        return ConversationHandler.END
+        # Show main menu after language selection
+        start(update, context)
+        return
     
-    logging.info(f"Message reçu de {user_name} (ID: {user_id}): {user_message}")
-    await update.message.reply_text(MESSAGES[language]['message_received'], parse_mode='HTML')
+    if query.data == 'change_lang':
+        # Show language selection menu
+        keyboard = [
+            [
+                InlineKeyboardButton("Français ", callback_data='lang_fr'),
+                InlineKeyboardButton("English ", callback_data='lang_en'),
+                InlineKeyboardButton("", callback_data='lang_ru')
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        query.edit_message_text(
+            text=" Выберите язык / Choose your language / Choisissez votre langue:",
+            reply_markup=reply_markup
+        )
+        return
+    
+    # Get messages for user's language
+    messages = MESSAGES[context.user_data['language']]
+    
+    if query.data == 'project':
+        context.user_data['action'] = 'project'
+        query.edit_message_text(
+            text=messages['project_prompt'],
+            parse_mode='HTML'
+        )
+    elif query.data == 'support':
+        context.user_data['action'] = 'support'
+        query.edit_message_text(
+            text=messages['support_prompt'],
+            parse_mode='HTML'
+        )
+    elif query.data == 'about':
+        keyboard = [[InlineKeyboardButton(messages['menu']['project'], callback_data='project')]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        query.edit_message_text(
+            text=messages['about'],
+            reply_markup=reply_markup,
+            parse_mode='HTML'
+        )
+    elif query.data == 'contact':
+        query.edit_message_text(
+            text=messages['contact'],
+            parse_mode='HTML'
+        )
+
+def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle user messages."""
+    if not context.user_data.get('language'):
+        # If no language is set, trigger start command
+        start(update, context)
+        return
+    
+    messages = MESSAGES[context.user_data['language']]
+    action = context.user_data.get('action')
+    
+    if action == 'project':
+        try:
+            save_project_request(
+                user_id=update.message.from_user.id,
+                username=update.message.from_user.username or "Anonymous",
+                message=update.message.text,
+                language=context.user_data['language']
+            )
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=messages['message_received'],
+                parse_mode='HTML'
+            )
+        except Exception as e:
+            print(f"Error saving project request: {e}")
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="An error occurred while saving your request. Please try again later.",
+                parse_mode='HTML'
+            )
+    
+    elif action == 'support':
+        try:
+            save_support_request(
+                user_id=update.message.from_user.id,
+                username=update.message.from_user.username or "Anonymous",
+                message=update.message.text,
+                language=context.user_data['language']
+            )
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=messages['message_received'],
+                parse_mode='HTML'
+            )
+        except Exception as e:
+            print(f"Error saving support request: {e}")
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="An error occurred while saving your request. Please try again later.",
+                parse_mode='HTML'
+            )
+    
+    # Clear the action after handling
+    context.user_data['action'] = None
 
 def main():
-    """Fonction principale du bot"""
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    """Start the bot."""
+    # Create the Application
+    application = Application.builder().token(TOKEN).build()
 
+    # Add handlers
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button_callback))
-    application.add_handler(ConversationHandler(
-        entry_points=[MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
-        states={
-            WAITING_FOR_PROJECT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
-            WAITING_FOR_SUPPORT: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)]
-        },
-        fallbacks=[]
-    ))
+    application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    application.run_polling()
+    # Start the Bot
+    print("Starting bot...")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main()
