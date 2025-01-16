@@ -14,18 +14,19 @@ TOKEN = os.getenv('TELEGRAM_TOKEN')
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Send a message when the command /start is issued."""
     if not context.user_data.get('language'):
-        # Create language selection keyboard
+        # Create language selection keyboard with emojis and better formatting
         keyboard = [
             [
-                InlineKeyboardButton("Français ", callback_data='lang_fr'),
-                InlineKeyboardButton("English ", callback_data='lang_en'),
-                InlineKeyboardButton("", callback_data='lang_ru')
+                InlineKeyboardButton("🇫🇷 Français", callback_data='lang_fr'),
+                InlineKeyboardButton("🇬🇧 English", callback_data='lang_en')
+            ],
+            [
+                InlineKeyboardButton("🇷🇺 Русский", callback_data='lang_ru')
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=" Выберите язык / Choose your language / Choisissez votre langue:",
+        await update.message.reply_text(
+            "🌍 Choisissez votre langue / Choose your language / Выберите язык:",
             reply_markup=reply_markup
         )
         return
@@ -33,19 +34,21 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get messages for user's language
     messages = MESSAGES[context.user_data['language']]
     
-    # Create main menu keyboard
+    # Create main menu keyboard with emojis
     keyboard = [
-        [InlineKeyboardButton(messages['menu']['project'], callback_data='project')],
-        [InlineKeyboardButton(messages['menu']['support'], callback_data='support')],
-        [InlineKeyboardButton(messages['menu']['about'], callback_data='about')],
-        [InlineKeyboardButton(messages['menu']['contact'], callback_data='contact')],
-        [InlineKeyboardButton(messages['menu']['change_lang'], callback_data='change_lang')]
+        [InlineKeyboardButton(f"🚀 {messages['menu']['project']}", callback_data='project')],
+        [InlineKeyboardButton(f"💡 {messages['menu']['support']}", callback_data='support')],
+        [InlineKeyboardButton(f"ℹ️ {messages['menu']['about']}", callback_data='about')],
+        [InlineKeyboardButton(f"📫 {messages['menu']['contact']}", callback_data='contact')],
+        [InlineKeyboardButton(f"🌍 {messages['menu']['change_lang']}", callback_data='change_lang')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=messages['welcome'],
+    welcome_message = f"""
+🤖 {messages['welcome']}
+"""
+    await update.message.reply_text(
+        welcome_message,
         reply_markup=reply_markup,
         parse_mode='HTML'
     )
@@ -65,17 +68,19 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     if query.data == 'change_lang':
-        # Show language selection menu
+        # Show language selection menu with better formatting
         keyboard = [
             [
-                InlineKeyboardButton("Français ", callback_data='lang_fr'),
-                InlineKeyboardButton("English ", callback_data='lang_en'),
-                InlineKeyboardButton("", callback_data='lang_ru')
+                InlineKeyboardButton("🇫🇷 Français", callback_data='lang_fr'),
+                InlineKeyboardButton("🇬🇧 English", callback_data='lang_en')
+            ],
+            [
+                InlineKeyboardButton("🇷🇺 Русский", callback_data='lang_ru')
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            text=" Выберите язык / Choose your language / Choisissez votre langue:",
+            "🌍 Choisissez votre langue / Choose your language / Выберите язык:",
             reply_markup=reply_markup
         )
         return
@@ -85,27 +90,59 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if query.data == 'project':
         context.user_data['action'] = 'project'
+        project_message = f"""
+🚀 {messages['project_prompt']}
+
+✨ Tips:
+• Décrivez votre projet en détail
+• Mentionnez vos contraintes techniques
+• Indiquez vos délais souhaités
+"""
         await query.edit_message_text(
-            text=messages['project_prompt'],
+            text=project_message,
             parse_mode='HTML'
         )
     elif query.data == 'support':
         context.user_data['action'] = 'support'
+        support_message = f"""
+💡 {messages['support_prompt']}
+
+✨ Tips:
+• Décrivez votre problème précisément
+• Partagez les messages d'erreur si possible
+• Indiquez l'urgence de votre demande
+"""
         await query.edit_message_text(
-            text=messages['support_prompt'],
+            text=support_message,
             parse_mode='HTML'
         )
     elif query.data == 'about':
-        keyboard = [[InlineKeyboardButton(messages['menu']['project'], callback_data='project')]]
+        about_message = f"""
+ℹ️ {messages['about']}
+
+🌟 Nos services:
+• Développement sur mesure
+• Support technique
+• Conseil en innovation
+"""
+        keyboard = [[InlineKeyboardButton(f"🚀 {messages['menu']['project']}", callback_data='project')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await query.edit_message_text(
-            text=messages['about'],
+            text=about_message,
             reply_markup=reply_markup,
             parse_mode='HTML'
         )
     elif query.data == 'contact':
+        contact_message = f"""
+📫 {messages['contact']}
+
+📱 Réseaux sociaux:
+• Twitter: @sshblue
+• LinkedIn: SSHBlue
+• GitHub: sshblue
+"""
         await query.edit_message_text(
-            text=messages['contact'],
+            text=contact_message,
             parse_mode='HTML'
         )
 
@@ -127,14 +164,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message=update.message.text,
                 language=context.user_data['language']
             )
+            success_message = f"""
+✅ {messages['message_received']}
+
+🎉 Merci pour votre demande de projet !
+⏳ Notre équipe vous contactera très bientôt.
+"""
             await update.message.reply_text(
-                messages['message_received'],
+                success_message,
                 parse_mode='HTML'
             )
         except Exception as e:
             print(f"Error saving project request: {e}")
             await update.message.reply_text(
-                "An error occurred while saving your request. Please try again later.",
+                "❌ Une erreur s'est produite. Veuillez réessayer plus tard.",
                 parse_mode='HTML'
             )
     
@@ -146,14 +189,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 message=update.message.text,
                 language=context.user_data['language']
             )
+            success_message = f"""
+✅ {messages['message_received']}
+
+🎯 Votre demande de support a été enregistrée !
+⚡ Notre équipe technique va l'examiner rapidement.
+"""
             await update.message.reply_text(
-                messages['message_received'],
+                success_message,
                 parse_mode='HTML'
             )
         except Exception as e:
             print(f"Error saving support request: {e}")
             await update.message.reply_text(
-                "An error occurred while saving your request. Please try again later.",
+                "❌ Une erreur s'est produite. Veuillez réessayer plus tard.",
                 parse_mode='HTML'
             )
     
@@ -162,6 +211,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     """Start the bot."""
+    print("🤖 Démarrage du bot...")
+    
     # Create the Application
     application = Application.builder().token(TOKEN).build()
 
@@ -171,7 +222,7 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Start the Bot
-    print("Starting bot...")
+    print("✨ Bot prêt à recevoir des messages !")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
