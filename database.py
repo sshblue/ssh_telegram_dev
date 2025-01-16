@@ -14,6 +14,8 @@ SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
 
+print(f"Attempting to connect to Supabase at URL: {SUPABASE_URL}")
+
 # Initialize Supabase client
 try:
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -38,10 +40,10 @@ def save_project_request(user_id: str, username: str, message: str, language: st
         print(f"Project request saved: {result}")
         return result.data[0] if result.data else None
     except APIError as e:
-        print(f"Erreur Supabase API lors de l'enregistrement du projet: {e}")
+        print(f"Supabase API error while saving project request: {e}")
         raise
     except Exception as e:
-        print(f"Erreur inattendue lors de l'enregistrement du projet: {e}")
+        print(f"Unexpected error while saving project request: {e}")
         raise
 
 def save_support_request(user_id: str, username: str, message: str, language: str) -> dict:
@@ -60,8 +62,8 @@ def save_support_request(user_id: str, username: str, message: str, language: st
         print(f"Support request saved: {result}")
         return result.data[0] if result.data else None
     except APIError as e:
-        print(f"Erreur Supabase API lors de l'enregistrement de la demande de support: {e}")
+        print(f"Supabase API error while saving support request: {e}")
         raise
     except Exception as e:
-        print(f"Erreur inattendue lors de l'enregistrement de la demande de support: {e}")
+        print(f"Unexpected error while saving support request: {e}")
         raise
