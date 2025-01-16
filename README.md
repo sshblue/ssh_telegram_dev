@@ -152,4 +152,4 @@ For support, please use the following channels:
 - Technical support through the bot itself
 
 ---
-Made with ❤️ by SSH Blue
+Made with ❤️ by ssh
