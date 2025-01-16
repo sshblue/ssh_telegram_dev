@@ -61,10 +61,12 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if query.data.startswith('lang_'):
         # Handle language selection
         language = query.data.split('_')[1]
-        context.user_data['language'] = language
-        
-        # Show main menu after language selection
-        await start(update, context)
+        if language in MESSAGES:  # Vérifier que la langue est valide
+            context.user_data['language'] = language
+            # Show main menu after language selection
+            await start(update, context)
+        else:
+            print(f"Warning: Invalid language selection: {language}")
         return
     
     if query.data == 'change_lang':
